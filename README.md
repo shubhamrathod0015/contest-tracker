@@ -2,7 +2,8 @@
 
 ## 🎥 Live Demo
 
-Watch the full demo here: [TLE Tracker Demo](https://drive.google.com/drive/folders/1qGJR0v0uTknivP9c0NLtYwocIjtw6eI1?usp=drive_link)
+Watch the full demo here: [TLE Tracker Demo](https://drive.google.com/file/d/1YYptIjTlF5xfsV75ogLm49x22rR5EBj1/view?usp=drive_link)
+
 
 ---
 
