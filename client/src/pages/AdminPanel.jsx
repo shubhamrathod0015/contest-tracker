@@ -1,29 +1,98 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 
 const AdminPanel = () => {
+  const { user, isAdmin } = useAuth();
   const [contestName, setContestName] = useState("");
   const [solutionLink, setSolutionLink] = useState("");
   const [solutions, setSolutions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch existing solutions from backend
   useEffect(() => {
-    const fetchSolutions = async () => {
-      try {
-        const response = await fetch("http://localhost:8000/api/solutions");
-        if (!response.ok) throw new Error("Failed to fetch solutions");
-        const data = await response.json();
-        setSolutions(data);
-      } catch (err) {
-        setError("Error loading solutions");
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!isAdmin) {
+      window.location.href = "/";
+    }
+  }, [isAdmin]);
 
-    fetchSolutions();
-  }, []);
+  // Fetch existing solutions from backend
+  // useEffect(() => {
+  //   const fetchSolutions = async () => {
+  //     try {
+  //       const response = await fetch("/api/solutions");
+  //       if (!response.ok) throw new Error("Failed to fetch solutions");
+  //       const data = await response.json();
+  //       setSolutions(data);
+  //     } catch (err) {
+  //       setError("Error loading solutions");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchSolutions();
+  // }, []);
+
+    // Fetch existing solutions from backend
+    useEffect(() => {
+      const fetchSolutions = async () => {
+        try {
+          const response = await fetch("/api/solutions", {
+            credentials: "include" // Include cookies
+          });
+          
+          if (!response.ok) {
+            if (response.status === 403) {
+              setError("You don't have admin privileges");
+              return;
+            }
+            throw new Error("Failed to fetch solutions");
+          }
+          
+          const data = await response.json();
+          setSolutions(data);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      fetchSolutions();
+    }, []);
+
+  // const addSolution = async () => {
+  //   if (!contestName || !solutionLink) {
+  //     setError("Contest name and YouTube link are required");
+  //     return;
+  //   }
+
+  //   // Prevent duplicate entries
+  //   if (solutions.some((s) => s.contest_name === contestName && s.youtube_link === solutionLink)) {
+  //     setError("This solution already exists!");
+  //     return;
+  //   }
+
+  //   const newSolution = { contest_name: contestName, site: "Codeforces", youtube_link: solutionLink };
+
+  //   try {
+  //     const response = await fetch("http://localhost:8000/api/solutions", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify(newSolution),
+  //     });
+
+  //     if (!response.ok) throw new Error("Failed to save solution");
+
+  //     const savedSolution = await response.json();
+  //     setSolutions([...solutions, savedSolution]);
+  //     setContestName("");
+  //     setSolutionLink("");
+  //     setError(""); // Clear any previous error
+  //   } catch (err) {
+  //     setError("Error saving solution");
+  //   }
+  // };
 
   const addSolution = async () => {
     if (!contestName || !solutionLink) {
@@ -31,33 +100,44 @@ const AdminPanel = () => {
       return;
     }
 
-    // Prevent duplicate entries
-    if (solutions.some((s) => s.contest_name === contestName && s.youtube_link === solutionLink)) {
-      setError("This solution already exists!");
-      return;
-    }
-
-    const newSolution = { contest_name: contestName, site: "Codeforces", youtube_link: solutionLink };
-
     try {
-      const response = await fetch("http://localhost:8000/api/solutions", {
+      const response = await fetch("/api/solutions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newSolution),
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          contest_name: contestName,
+          youtube_link: solutionLink
+        }),
       });
 
-      if (!response.ok) throw new Error("Failed to save solution");
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to save solution");
+      }
 
-      const savedSolution = await response.json();
-      setSolutions([...solutions, savedSolution]);
+      setSolutions([...solutions, data]);
       setContestName("");
       setSolutionLink("");
-      setError(""); // Clear any previous error
+      setError("");
     } catch (err) {
-      setError("Error saving solution");
+      setError(err.message);
     }
-  };
+  };  
 
+  if (!isAdmin) {
+    return (
+      <div className="p-4 max-w-4xl mx-auto text-center mt-6">
+        <h2 className="text-xl text-red-500">Unauthorized Access</h2>
+        <p>You don't have permission to view this page</p>
+      </div>
+    );
+  }
+  
   return (
     <div className="p-4 max-w-4xl mx-auto rounded-sm shadow-lg mt-6">
       <h2 className="text-xl font-bold ">Admin Panel - Add Solutions</h2>

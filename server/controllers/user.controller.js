@@ -89,6 +89,10 @@ const loginUser = asyncHandler(async (req, res) => {
             200,
             {
                 user: loggedInUser,
+                // user: {
+                //     ...loggedInUser.toObject(),
+                //     isAdmin: user.isAdmin // Explicitly include isAdmin
+                //   },
                 accessToken,
                 refreshToken
             },

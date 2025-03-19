@@ -20,7 +20,8 @@ const ContestList = () => {
   useEffect(() => {
     const fetchContests = async () => {
       try {
-        const { data } = await axios.get("https://tle-tracker.onrender.com/api/contests/all");
+        // const { data } = await axios.get("/api/contests/all");
+        const { data } = await axios.get("/api/contests/all");
         const updatedContests = data.map((contest) => ({
           ...contest,
           timeRemaining: Math.max(
@@ -40,7 +41,7 @@ const ContestList = () => {
 
     const fetchSolutions = async () => {
       try {
-        const { data } = await axios.get("https://tle-tracker.onrender.com/api/solutions");
+        const { data } = await axios.get("/api/solutions");
         const solutionsMap = {};
         
         // Map solutions to contests by matching contest_name to title
@@ -64,7 +65,7 @@ const ContestList = () => {
     const fetchBookmarks = async () => {
       if (user && token) {
         try {
-          const { data } = await axios.get("https://tle-tracker.onrender.com/api/bookmarks", {
+          const { data } = await axios.get("/api/bookmarks", {
             headers: { Authorization: `Bearer ${token}` },
           });
           setBookmarked(data.map(({ contestId }) => contestId));
@@ -94,7 +95,7 @@ const ContestList = () => {
     if (contests.length > 0) {
       const fetchSolutions = async () => {
         try {
-          const { data } = await axios.get("https://tle-tracker.onrender.com/api/solutions");
+          const { data } = await axios.get("/api/solutions");
           const solutionsMap = {};
           
           // Map solutions to contests by matching contest_name to title
@@ -140,14 +141,14 @@ const ContestList = () => {
     const isBookmarked = bookmarked.includes(contest._id);
     try {
       if (isBookmarked) {
-        await axios.delete(`https://tle-tracker.onrender.com/api/bookmarks/${contest._id}`, {
+        await axios.delete(`/api/bookmarks/${contest._id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBookmarked((prev) => prev.filter((id) => id !== contest._id));
         toast.success("Bookmark removed.");
       } else {
         await axios.post(
-          "https://tle-tracker.onrender.com/api/bookmarks",
+          "/api/bookmarks",
           {
             _id: contest._id,
             title: contest.title,

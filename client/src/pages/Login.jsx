@@ -85,25 +85,47 @@ const Login = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+  // const handleSubmit = async e => {
+  //   e.preventDefault();
+  //   setError('');
+  //   setLoading(true);
     
-    try {
-      const result = await login(email, password);
+  //   try {
+  //     const result = await login(email, password);
       
-      if (result.success) {
-        navigate('/');
-      } else {
-        setError(result.message);
-      }
-    } catch (err) {
-      setError('Login failed. Please try again.');
-    } finally {
-      setLoading(false);
+  //     if (result.success) {
+  //       navigate('/');
+  //     } else {
+  //       setError(result.message);
+  //     }
+  //   } catch (err) {
+  //     setError('Login failed. Please try again.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // Update handleSubmit
+const handleSubmit = async e => {
+  e.preventDefault();
+  setError('');
+  setLoading(true);
+  
+  try {
+    const result = await login(email, password);
+    
+    if (result.success) {
+      // Add delay for cookie propagation
+      setTimeout(() => navigate('/'), 500);
+    } else {
+      setError(result.message);
     }
-  };
+  } catch (err) {
+    setError('Login failed. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const toggleTheme = () => {
     setDarkMode(!darkMode);

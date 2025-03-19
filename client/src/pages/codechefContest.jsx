@@ -14,7 +14,7 @@ const CodeChefContests = () => {
     setError(null);
 
     try {
-      const backendUrl = "http://localhost:5000/api/contests/full-data";
+      const backendUrl = "/api/contests/full-data";
       console.log("Fetching contests from:", backendUrl);
 
       const response = await fetch(backendUrl);
