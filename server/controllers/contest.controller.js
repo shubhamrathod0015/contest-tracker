@@ -27,7 +27,7 @@ export const updateSolutionLink = async (req, res) => {
         const { contestId } = req.params;
         const { solutionUrl } = req.body;
 
-        console.log(`Updating contest: ${contestId} with URL: ${solutionUrl}`); // Debugging
+        // console.log(`Updating contest: ${contestId} with URL: ${solutionUrl}`); // Debugging
 
         if (!contestId) {
             console.error("Contest ID is missing");
@@ -50,7 +50,7 @@ export const updateSolutionLink = async (req, res) => {
             return res.status(404).json({ message: "Contest not found" });
         }
 
-        console.log("Updated Contest:", updatedContest);
+        // console.log("Updated Contest:", updatedContest);
         res.json(updatedContest);
     } catch (error) {
         console.error("Error updating contest:", error);

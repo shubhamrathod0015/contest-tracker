@@ -14,7 +14,7 @@ export const fetchCodeChefContests = async () => {
             return [];
         }
 
-        console.log("✅ API response received.");
+        // console.log("✅ API response received.");
 
         const now = new Date();
 
@@ -45,9 +45,9 @@ export const fetchCodeChefContests = async () => {
         const existingPastContest = await Contest.findOne({ platform: "CodeChef", status: "PAST" });
         if (!existingPastContest) {
             await Contest.insertMany(pastContests);
-            console.log(`✅ Stored ${pastContests.length} past contests.`);
+            // console.log(`✅ Stored ${pastContests.length} past contests.`);
         } else {
-            console.log("✅ Past contests already stored. Skipping...");
+            // console.log("✅ Past contests already stored. Skipping...");
         }
 
         // ✅ Step 2: Update ended contests to "PAST"
@@ -55,7 +55,7 @@ export const fetchCodeChefContests = async () => {
             { status: "UPCOMING", endTime: { $lte: now } },
             { $set: { status: "PAST" } }
         );
-        console.log(`✅ Updated ${updatedCount.modifiedCount} contests from UPCOMING to PAST.`);
+        // console.log(`✅ Updated ${updatedCount.modifiedCount} contests from UPCOMING to PAST.`);
 
         // ✅ Step 3: Insert new upcoming contests
         for (let contest of upcomingContests) {
@@ -65,12 +65,12 @@ export const fetchCodeChefContests = async () => {
                 await Contest.create(contest);
             }
         }
-        console.log(`✅ Stored/updated ${upcomingContests.length} upcoming contests.`);
+        // console.log(`✅ Stored/updated ${upcomingContests.length} upcoming contests.`);
 
         return [...upcomingContests, ...pastContests];
 
     } catch (error) {
-        console.error("❌ Error fetching CodeChef contests:", error.message);
+        // console.error("❌ Error fetching CodeChef contests:", error.message);
         return [];
     }
 };

@@ -88,11 +88,11 @@ const loginUser = asyncHandler(async (req, res) => {
         .json(new ApiResponse(
             200,
             {
-                user: loggedInUser,
-                // user: {
-                //     ...loggedInUser.toObject(),
-                //     isAdmin: user.isAdmin // Explicitly include isAdmin
-                //   },
+                // user: loggedInUser,
+                user: {
+                    ...loggedInUser.toObject(),
+                    isAdmin: user.isAdmin // Explicitly include isAdmin
+                  },
                 accessToken,
                 refreshToken
             },
@@ -162,59 +162,35 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
-    return res
-        .status(200)
-        .json(new ApiResponse(
-            200,
-            req.user,
-            "Current user fetched successfully"
-        ));
-});
-
-const changeCurrentPassword = asyncHandler(async (req, res) => {
-    const { oldPassword, newPassword } = req.body;
-
-    const user = await User.findById(req.user?._id);
-    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
-
-    if (!isPasswordCorrect) {
-        throw new ApiError(400, "Invalid old password");
+    // User data is attached by the verifyJWT middleware
+    const user = req.user;
+    
+    if (!user) {
+      throw new ApiError(404, "User not found");
     }
-
-    user.password = newPassword;
-    await user.save({ validateBeforeSave: false });
-
+  
     return res
-        .status(200)
-        .json(new ApiResponse(200, {}, "Password changed successfully"));
-});
+      .status(200)
+      .json(new ApiResponse(
+        200,
+        user,
+        "Current user retrieved successfully"
+      ));
+  });
+  
 
-const updateAccountDetails = asyncHandler(async (req, res) => {
-    const { username, email } = req.body;
 
-    if (!username || !email) {
-        throw new ApiError(400, "All fields are required");
-    }
 
-    const user = await User.findByIdAndUpdate(
-        req.user?._id,
-        {
-            $set: { username, email }
-        },
-        { new: true }
-    ).select("-password -refreshToken");
 
-    return res
-        .status(200)
-        .json(new ApiResponse(200, user, "Account details updated"));
-});
+
+
+
 
 export {
     registerUser,
     loginUser,
     logoutUser,
     refreshAccessToken,
-    getCurrentUser,
-    changeCurrentPassword,
-    updateAccountDetails
+    getCurrentUser
+  
 };

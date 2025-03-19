@@ -12,12 +12,12 @@ const fetchContestData = async () => {
 
     if (data.status === "success") {
       fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(data, null, 2));
-      console.log("✅ Contest data saved successfully.");
+      console.log("Contest data saved successfully.");
     } else {
-      console.error("❌ Failed to fetch contest data.");
+      console.error(" Failed to fetch contest data.");
     }
   } catch (error) {
-    console.error("❌ Error fetching contest data:", error.message);
+    console.error(" Error fetching contest data:", error.message);
   }
 };
 
