@@ -50,10 +50,9 @@ export const updateSolutionLink = async (req, res) => {
             return res.status(404).json({ message: "Contest not found" });
         }
 
-        // console.log("Updated Contest:", updatedContest);
+
         res.json(updatedContest);
     } catch (error) {
-        console.error("Error updating contest:", error);
         res.status(500).json({ message: "Server Error", error: error.message });
     }
 };
