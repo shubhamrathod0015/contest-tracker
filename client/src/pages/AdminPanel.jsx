@@ -11,7 +11,7 @@ const AdminPanel = () => {
   useEffect(() => {
     const fetchSolutions = async () => {
       try {
-        const response = await fetch("https://tle-tracker.onrender.com/api/solutions");
+        const response = await fetch("http://localhost:8000/api/solutions");
         if (!response.ok) throw new Error("Failed to fetch solutions");
         const data = await response.json();
         setSolutions(data);
@@ -40,7 +40,7 @@ const AdminPanel = () => {
     const newSolution = { contest_name: contestName, site: "Codeforces", youtube_link: solutionLink };
 
     try {
-      const response = await fetch("https://tle-tracker.onrender.com/api/solutions", {
+      const response = await fetch("http://localhost:8000/api/solutions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newSolution),

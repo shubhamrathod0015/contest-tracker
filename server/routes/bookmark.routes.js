@@ -1,5 +1,5 @@
 import express from 'express';
-import auth from '../middleware/auth.js';
+import auth from '../middlewares/auth.js';
 import Bookmark from '../models/Bookmark.js';
 
 const router = express.Router();

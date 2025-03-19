@@ -1,12 +1,12 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+import { User } from "../models/user.model.js";
 import dotenv from "dotenv";
 
 const router = express.Router();
 dotenv.config();
 
-console.log("JWT_SECRET:", process.env.JWT_SECRET);
+console.log("ACCESS_TOKEN_SECRET:", process.env.ACCESS_TOKEN_SECRET);
 
 // Register a new user
 router.post("/register", async (req, res) => {
@@ -32,7 +32,7 @@ router.post("/register", async (req, res) => {
     // Generate JWT token with isAdmin
     const token = jwt.sign(
       { userId: user._id, isAdmin: user.isAdmin },
-      process.env.JWT_SECRET,
+      process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: "7d" }
     );
 
@@ -71,7 +71,7 @@ router.post("/login", async (req, res) => {
     // Generate JWT token with isAdmin
     const token = jwt.sign(
       { userId: user._id, isAdmin: user.isAdmin },
-      process.env.JWT_SECRET,
+      process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: "7d" }
     );
 

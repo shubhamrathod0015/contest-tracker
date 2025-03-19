@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+import { User } from "../models/user.model.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -16,7 +16,7 @@ const auth = async (req, res, next) => {
   
       let decoded;
       try {
-        decoded = jwt.verify(token, process.env.JWT_SECRET);
+        decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
       } catch (error) {
         console.error("❌ JWT Verification Failed:", error.message);
         return res.status(401).json({ message: "Invalid or expired token" });

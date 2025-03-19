@@ -1,5 +1,5 @@
 import express from "express";
-import { getContests} from "../controllers/contestController.js";
+import { getContests} from "../controllers/contest.controller.js";
 // import auth from "../middleware/auth.js";
 // import admin from "../middleware/admin.js";
 

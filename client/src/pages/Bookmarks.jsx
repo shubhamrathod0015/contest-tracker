@@ -13,7 +13,7 @@ const Bookmarks = () => {
 
     const fetchBookmarks = async () => {
       try {
-        const res = await axios.get("https://tle-tracker.onrender.com/api/bookmarks", {
+        const res = await axios.get("http://localhost:8000/api/bookmarks", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBookmarked(res.data);
@@ -32,7 +32,7 @@ const Bookmarks = () => {
     }
 
     try {
-      await axios.delete(`https://tle-tracker.onrender.com/api/bookmarks/${bookmarkId}`, {
+      await axios.delete(`http://localhost:8000/api/bookmarks/${bookmarkId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
