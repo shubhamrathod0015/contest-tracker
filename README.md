@@ -3,7 +3,7 @@
 
 ## 🎥 Live Demo
 
-Watch the full demo of ADMIN here: [TLE Tracker Demo](https://drive.google.com/file/d/18a5c_uUNceC6w0f2h5_hIMg19JPmKJR5/view?usp=drive_link)
+Watch the full demo of ADMIN here: [TLE Tracker Demo](https://drive.google.com/file/d/1sgke5X_JJgzD4upKFMkl0vEUAXjEhtcA/view?usp=drive_link)
 
 Watch the full demo of USER here: [TLE Tracker Demo](https://drive.google.com/file/d/17Oj6Tl7P3qKn0rUj6BpyaUEZbYPWKjP-/view?usp=drive_link)
 
