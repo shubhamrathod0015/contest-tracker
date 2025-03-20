@@ -13,6 +13,7 @@ Watch the full demo of USER here: [TLE Tracker Demo](https://drive.google.com/fi
 
 TLE Tracker is a **MERN stack**-based platform designed to track competitive programming contests from **CodeChef, CodeForces, and LeetCode**. It includes features such as:
 
+## **📜 Features**  
 ✅ User Authentication (Signup, Login, Google OAuth)
 ✅ JWT Authentication (Access & Refresh Tokens)
 ✅ Fetch Upcoming & Past Contests (From Codeforces, CodeChef*, and LeetCode* APIs)
