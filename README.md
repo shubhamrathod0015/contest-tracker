@@ -2,7 +2,9 @@
 
 ## 🎥 Live Demo
 
-Watch the full demo here: [TLE Tracker Demo](https://drive.google.com/file/d/1YYptIjTlF5xfsV75ogLm49x22rR5EBj1/view?usp=drive_link)
+Watch the full demo of ADMIN here: [TLE Tracker Demo](https://drive.google.com/file/d/18a5c_uUNceC6w0f2h5_hIMg19JPmKJR5/view?usp=drive_link)
+
+Watch the full demo of USER here: [TLE Tracker Demo](https://drive.google.com/file/d/1xnVj7VsIraJc2MFERMCqHe8mBtCFCrv3/view?usp=drive_link)
 
 
 ---
@@ -11,14 +13,14 @@ Watch the full demo here: [TLE Tracker Demo](https://drive.google.com/file/d/1YY
 
 TLE Tracker is a **MERN stack**-based platform designed to track competitive programming contests from **CodeChef, CodeForces, and LeetCode**. It includes features such as:
 
-✅ **Bookmarking contests** (with authentication)\
-✅ **JWT-based authentication**\
-✅ **Admin panel for video uploads**\
-✅ **Dark mode support**\
-✅ **Fully responsive design**\
-✅ **Loader animation for smooth UX**\
-✅ **Automated contest fetching via cron jobs**\
-✅ **YouTube integration for contest solution videos**
+✅ User Authentication (Signup, Login, Google OAuth)
+✅ JWT Authentication (Access & Refresh Tokens)
+✅ Fetch Upcoming & Past Contests (From Codeforces, CodeChef*, and LeetCode* APIs)
+✅ Bookmark Contests (Logged-in users can save contests)
+✅ Filter by Platform (View contests from selected platforms)
+✅ Admin Access (Admins can add YouTube solution links for past contests)
+✅ Responsive UI (Optimized for Mobile & Tablet)
+✅ Light/Dark Mode Toggle
 
 ---
 
@@ -26,19 +28,16 @@ TLE Tracker is a **MERN stack**-based platform designed to track competitive pro
 
 ### **Frontend:**
 
-- React.js (with Vite for fast builds)
-- Tailwind CSS for styling
-- React Router for navigation
-- React Hot Toast for notifications
-- React Icons for UI enhancements
+React.js ⚛️ (with React Context for state management)
+Material-UI 🎨 (for styling and responsiveness)
 
 ### **Backend:**
 
 - Express.js (Node.js framework)
 - MongoDB (via Mongoose for database operations)
 - JWT for authentication
-- Google APIs integration
-- Node-cron for scheduled tasks
+- Google APIs Integration
+- CLIST API Integration
 
 ---
 
@@ -48,17 +47,16 @@ TLE Tracker is a **MERN stack**-based platform designed to track competitive pro
 
 | **Method** | **Endpoint**               | **Description**                         |
 |-----------|--------------------------|-----------------------------------------|
-| GET       | `/api/contests`           | Fetch all upcoming contests            |
-| GET       | `/api/contests/:id`       | Fetch contest details by ID            |
-| GET       | `/api/contests/all`  | Fetch CodeChef contests via API        |
-| GET       | `/api/contests/all`| Fetch CodeForces contests via API      |
-| GET       | `/api/contests/all`  | Fetch LeetCode contests via GraphQL API |
+| GET       | `/api/contests/upcoming`          | Get upcoming contests          |
+| GET       | `/api/contests/upcoming?plateform`| Get upcoming contests filter by plateform |
+| GET       | `/api/contests/past`              | Get Past Contests       |
+| GET       | `/api/contests/past?palteform`    |Get past contests filter by plateform     |
 
 ### **User & Authentication APIs**
 
 | **Method** | **Endpoint**           | **Description**                        |
 |-----------|------------------------|----------------------------------------|
-| POST      | `/api/auth/register`    | Register a new user                   |
+| POST      | `/api/auth/signup  `    | Register a new user                   |
 | POST      | `/api/auth/login`       | Login user and return JWT             |
 
 ### **Bookmark APIs**
@@ -76,15 +74,7 @@ TLE Tracker is a **MERN stack**-based platform designed to track competitive pro
 | POST      | `/api/solutions`        | Add a contest solution (Admin)        |
 | GET       | `/api/solutions`        | Fetch contest solutions               |
 
-### **Contest Fetching APIs**
-
-| **Platform**    | **API Endpoint** |
-|----------------|----------------|
-| **CodeChef**   | [`https://www.codechef.com/api/list/contests/all?sort_by=START&sorting_order=asc&offset=0&mode=all`](https://www.codechef.com/api/list/contests/all?sort_by=START&sorting_order=asc&offset=0&mode=all) |
-| **CodeForces** | [`https://codeforces.com/api/contest.list`](https://codeforces.com/api/contest.list) |
-| **LeetCode**   | Uses GraphQL at [`https://leetcode.com/graphql`](https://leetcode.com/graphql) |
-
-### **Cron Jobs**
+### **Contest Fetching CLIST APIs**
 
 - **Automated contest fetching** runs every few hours to update contest lists from CodeChef, CodeForces, and LeetCode.
 - **YouTube video sync** automatically fetches the latest contest solution videos.
@@ -97,7 +87,7 @@ TLE Tracker is a **MERN stack**-based platform designed to track competitive pro
 
 1. Clone the repository and navigate to the backend folder:
    ```bash
-   git clone https://github.com/amreshkyadav998/contest-tracker.git/server
+   git clone https://github.com/shubhamrathod0015/contest-tracker.git/server
    ```
 2. Install dependencies:
    ```bash
