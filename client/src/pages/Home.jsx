@@ -95,7 +95,7 @@ export default function Home() {
       if (isBookmarked) {
         // Remove bookmark from API
         await API.delete(`/bookmarks/${contestId}` , { headers: { Authorization: `Bearer ${user.token}`} });
-        setSnackbarMessage("Bookmark removed ❌");
+        setSnackbarMessage("Bookmark removed ");
   
         // Update local state
         setBookmarked((prev) => {
@@ -145,7 +145,7 @@ export default function Home() {
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h4" fontWeight="bold" gutterBottom align="center">
-        🎯 Upcoming Contests
+      🚀 Upcoming Challenges
       </Typography>
 
       <Box display="flex" justifyContent="right" mb={3}>
