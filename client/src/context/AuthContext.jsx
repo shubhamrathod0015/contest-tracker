@@ -1,145 +1,86 @@
-import React, {
-  createContext,
-  useState,
-  useEffect,
-  useContext,
-  useCallback,
-} from "react";
+import { createContext, useState, useEffect } from "react";
 import axios from "axios";
+import API from "../services/api";
 
-export const AuthContext = createContext();
+const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
+const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  // Axios instance with base config
-  const authAxios = axios.create({
-    withCredentials: true,
-    baseURL: import.meta.env.VITE_API_BASE_URL,
-  });
-
-  // Request interceptor
+  // Load user from localStorage on app start
   useEffect(() => {
-    const requestInterceptor = authAxios.interceptors.request.use((config) => {
-      if (!config.headers.Authorization) {
-        const token = localStorage.getItem("accessToken");
-        if (token) config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    });
-
-    return () => authAxios.interceptors.request.eject(requestInterceptor);
-  }, []);
-
-  // Response interceptor with refresh logic
-  useEffect(() => {
-    const responseInterceptor = authAxios.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-
-          try {
-            const { data } = await authAxios.post("/api/auth/refresh-token");
-            localStorage.setItem("accessToken", data.accessToken);
-            originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
-            return authAxios(originalRequest);
-          } catch (refreshError) {
-            await logout();
-            return Promise.reject(refreshError);
-          }
-        }
-
-        return Promise.reject(error);
-      }
-    );
-
-    return () => authAxios.interceptors.response.eject(responseInterceptor);
-  }, []);
-
-  // Auth check with proper error handling
-  const checkAuth = useCallback(async () => {
-    try {
-      const { data } = await authAxios.get("/api/users/me");
-      setUser({
-        ...data.user,
-        isAdmin: data.user?.roles?.includes("admin") || false,
-      });
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
+    const storedUser = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
+    if (storedUser && token) {
+      setUser(JSON.parse(storedUser));
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     }
   }, []);
 
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
 
-  // Login with cookie handling
+
   const login = async (email, password) => {
-    try {
-      const { data } = await authAxios.post("/api/users/login", {
-        email,
-        password,
-      });
+    try { 
+      const res = await API.post("/auth/login", { email, password });
+      // console.log("User after login:", res);
 
-      localStorage.setItem("accessToken", data.accessToken);
-      setUser(data.user);
+      if (!res.data || !res.data.user || !res.data.accessToken) {
+        throw new Error("Invalid login response from server.");
+      }
 
-      return { success: true, data };
+      // Set user & store token
+      setUser(res.data.user);
+
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("token", res.data.accessToken);
+
+      // Set Authorization header for future requests
+      axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.accessToken}`;
+
     } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || "Authentication failed",
-      };
+      console.error("Login failed:", error.response?.data?.message || error.message);
+      throw new Error(error.response?.data?.message || "Login failed. Please try again.");
     }
   };
 
-  // Registration with error handling
-  const register = async (userData) => {
+  const signup = async (name, email, password) => {
     try {
-      const { data } = await authAxios.post("/api/users/register", userData);
-      await checkAuth();
-      return { success: true, data };
+      const res = await API.post("/auth/signup", { name, email, password });
+  
+      if (!res.data || !res.data.user || !res.data.accessToken) {
+        throw new Error("Invalid signup response from server.");
+      }
+  
+      // Set user & store token
+      setUser(res.data.user);
+  
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("token", res.data.accessToken);
+  
+      // Set Authorization header for future requests
+      axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.accessToken}`;
+  
     } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || "Registration failed",
-      };
+      console.error("Signup failed:", error.response?.data?.message || error.message);
+      throw new Error(error.response?.data?.message || "Signup failed. Please try again.");
     }
   };
+  
 
-  // Enhanced logout
-  const logout = async () => {
-    try {
-      await authAxios.post("/api/users/logout");
-    } finally {
-      localStorage.removeItem("accessToken");
-      setUser(null);
-      delete authAxios.defaults.headers.common.Authorization;
-    }
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    // console.log("logout",user)
+    // Remove token from axios headers
+    delete axios.defaults.headers.common["Authorization"];
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        login,
-        register,
-        logout,
-        checkAuth,
-        isAuthenticated: !!user,
-        isAdmin: user?.isAdmin || false,
-      }}
-    >
+    <AuthContext.Provider value={{ user,signup, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export { AuthContext, AuthProvider };

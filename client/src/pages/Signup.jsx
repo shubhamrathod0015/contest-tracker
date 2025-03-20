@@ -1,231 +1,197 @@
-import React, { useState, useContext, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
-import * as THREE from 'three';
+import React, { useContext, useState } from "react";
+import {
+    TextField, Button, Container, Typography, Card,
+    Snackbar, Alert, Box, InputAdornment, IconButton
+} from "@mui/material";
+import API from "../services/api";
+import { useNavigate } from "react-router-dom";
+import PersonIcon from "@mui/icons-material/Person";
+import EmailIcon from "@mui/icons-material/Email";
+import LockIcon from "@mui/icons-material/Lock";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { AuthContext } from "../context/AuthContext";
 
-const Signup = () => {
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  
-  const { register } = useContext(AuthContext);
-  const navigate = useNavigate();
-  const mountRef = useRef(null);
-  const animationRef = useRef(null);
+export default function Signup() {
+    const { signup } = useContext(AuthContext);
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [openSnackbar, setOpenSnackbar] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
-  const { username, email, password, confirmPassword } = formData;
+    const [nameError, setNameError] = useState("");
+    const [emailError, setEmailError] = useState("");
+    const [passwordError, setPasswordError] = useState("");
 
-  useEffect(() => {
-    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setDarkMode(prefersDarkMode);
-  }, []);
-  
-  useEffect(() => {
-    const currentMount = mountRef.current;
-  
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x000000, 0);
-    currentMount.appendChild(renderer.domElement);
-  
-    // Create particles (from Login component)
-    const particlesGeometry = new THREE.BufferGeometry();
-    const particlesCount = 2000;
-    const posArray = new Float32Array(particlesCount * 3);
-  
-    for (let i = 0; i < particlesCount * 3; i++) {
-      posArray[i] = (Math.random() - 0.5) * 5;
-    }
-  
-    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-  
-    // Material (Updated to react to darkMode)
-    const particlesMaterial = new THREE.PointsMaterial({
-      size: 0.020,
-      color: darkMode ? 0xffffff : 0x6366f1, // White in dark mode, Blue in light mode
-      transparent: true,
-      opacity: 0.8
-    });
-  
-    const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-    scene.add(particlesMesh);
-  
-    camera.position.z = 3;
-  
-    // Animation
-    const animate = () => {
-      particlesMesh.rotation.x += 0.0020;
-      particlesMesh.rotation.y += 0.0020;
-  
-      renderer.render(scene, camera);
-      animationRef.current = requestAnimationFrame(animate);
+    const navigate = useNavigate();
+
+    // Validation Functions
+    const validateName = (name) => name.length >= 3;
+    const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const validatePassword = (password) =>
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
+
+    const handleSignup = async () => {
+        // Reset errors
+        setNameError("");
+        setEmailError("");
+        setPasswordError("");
+
+        let isValid = true;
+
+        if (!name) {
+            setNameError("Full name is required");
+            isValid = false;
+        } else if (!validateName(name)) {
+            setNameError("Full name must be at least 3 characters");
+            isValid = false;
+        }
+
+        if (!email) {
+            setEmailError("Email is required");
+            isValid = false;
+        } else if (!validateEmail(email)) {
+            setEmailError("Invalid email format");
+            isValid = false;
+        }
+
+        if (!password) {
+            setPasswordError("Password is required");
+            isValid = false;
+        } else if (!validatePassword(password)) {
+            setPasswordError("Password must have 8+ chars, 1 uppercase, 1 number & 1 special char");
+            isValid = false;
+        }
+
+        if (!isValid) return;
+
+        try {
+
+            await signup(name,email, password);
+            setSnackbarMessage("✅ Signup Successful! Redirecting...");
+            setSnackbarSeverity("success");
+            setOpenSnackbar(true);
+            setTimeout(() => navigate("/"), 1500);
+        } catch (err) {
+            console.error("Signup Error:", err.response ? err.response.data : err);
+            setSnackbarMessage("❌ Signup Failed! User may already exist.");
+            setSnackbarSeverity("error");
+            setOpenSnackbar(true);
+        }
     };
-  
-    animate();
-  
-    const handleResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    };
-  
-    window.addEventListener('resize', handleResize);
-  
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationRef.current);
-      currentMount.removeChild(renderer.domElement);
-    };
-  }, [darkMode]); // Include darkMode in dependencies
-  
-  const handleChange = e => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    setError('');
-    
-    // Validate form
-    if (password !== confirmPassword) {
-      return setError('Passwords do not match');
-    }
-    
-    if (password.length < 6) {
-      return setError('Password must be at least 6 characters');
-    }
-    
-    setLoading(true);
-    
-    try {
-      const result = await register(username, email, password);
-      
-      if (result.success) {
-        navigate('/');
-      } else {
-        setError(result.message);
-      }
-    } catch (err) {
-      setError('Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    return (
+        <Container maxWidth="sm" sx={{ mt: 8 }}>
+            <Card sx={{ p: 4, borderRadius: 3, boxShadow: 5, textAlign: "center" }}>
+                <Typography variant="h4" fontWeight="bold" gutterBottom color="primary">
+                    ✨ Create an Account
+                </Typography>
 
-  const toggleTheme = () => {
-    setDarkMode(prevMode => !prevMode);
-  };
+                <Typography variant="body2" color="textSecondary" mb={3}>
+                    Sign up to track upcoming contests and bookmark them easily.
+                </Typography>
 
-  return (
-    <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div ref={mountRef} className="absolute inset-0 overflow-hidden" />
-      
-      <div className={`max-w-md w-full space-y-8 relative ${darkMode ? 'bg-gray-800 bg-opacity-70' : 'bg-white bg-opacity-80'} backdrop-blur-sm p-8 rounded-xl shadow-xl`}>
-        <div className="absolute top-4 right-4">
-          <button 
-            onClick={toggleTheme} 
-            className={`p-2 rounded-full ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-700'}`}
-            aria-label="Toggle theme"
-          >
-            {darkMode ? '☀️' : '🌙'}
-          </button>
-        </div>
-        <div>
-          <h2 className={`mt-6 text-center text-3xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            Create your account
-          </h2>
-          <p className={`mt-2 text-center text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            Or{' '}
-            <Link to="/login" className="font-medium text-indigo-500 hover:text-indigo-400">
-              sign in to your account
-            </Link>
-          </p>
-        </div>
-        
-        {error && (
-          <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded relative" role="alert">
-            <span className="block sm:inline">{error}</span>
-          </div>
-        )}
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-3 ">
-            <div>
-              <label htmlFor="username" className="sr-only">Username</label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${darkMode ? 'border-gray-700 bg-gray-700 text-white placeholder-gray-400' : 'border-gray-300 text-gray-900 placeholder-gray-500'} rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
-                placeholder="Username"
-                value={username}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <label htmlFor="email" className="sr-only">Email address</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${darkMode ? 'border-gray-700 bg-gray-700 text-white placeholder-gray-400' : 'border-gray-300 text-gray-900 placeholder-gray-500'} focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
-                placeholder="Email address"
-                value={email}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">Password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${darkMode ? 'border-gray-700 bg-gray-700 text-white placeholder-gray-400' : 'border-gray-300 text-gray-900 placeholder-gray-500'} focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
-                placeholder="Password"
-                value={password}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <label htmlFor="confirmPassword" className="sr-only">Confirm Password</label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${darkMode ? 'border-gray-700 bg-gray-700 text-white placeholder-gray-400' : 'border-gray-300 text-gray-900 placeholder-gray-500'} rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
+                {/* Name Input */}
+                <TextField
+                    label="Full Name"
+                    fullWidth
+                    margin="normal"
+                    variant="outlined"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    error={!!nameError}
+                    helperText={nameError}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <PersonIcon color="primary" />
+                            </InputAdornment>
+                        ),
+                    }}
+                />
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              {loading ? 'Signing up...' : 'Sign Up'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
+                {/* Email Input */}
+                <TextField
+                    label="Email"
+                    fullWidth
+                    margin="normal"
+                    variant="outlined"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    error={!!emailError}
+                    helperText={emailError}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <EmailIcon color="primary" />
+                            </InputAdornment>
+                        ),
+                    }}
+                />
 
-export default Signup;
+                {/* Password Input with Toggle Visibility */}
+                <TextField
+                    label="Password"
+                    type={showPassword ? "text" : "password"}
+                    fullWidth
+                    margin="normal"
+                    variant="outlined"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    error={!!passwordError}
+                    helperText={passwordError}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <LockIcon color="primary" />
+                            </InputAdornment>
+                        ),
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton onClick={() => setShowPassword(!showPassword)}>
+                                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
+                />
+
+                {/* Signup Button */}
+                <Button
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    sx={{ mt: 3, borderRadius: 2, py: 1.5, fontSize: "1rem" }}
+                    onClick={handleSignup}
+                >
+                    Signup
+                </Button>
+
+                {/* Snackbar for Success/Error Messages */}
+                <Snackbar
+                    open={openSnackbar}
+                    autoHideDuration={3000}
+                    onClose={() => setOpenSnackbar(false)}
+                    anchorOrigin={{ vertical: "top", horizontal: "center" }}
+                >
+                    <Alert severity={snackbarSeverity} sx={{ width: "100%" }}>
+                        {snackbarMessage}
+                    </Alert>
+                </Snackbar>
+
+                {/* Login Suggestion */}
+                <Box mt={2}>
+                    <Typography variant="body2">
+                        Already have an account?{" "}
+                        <Button variant="text" color="secondary" onClick={() => navigate("/login")}>
+                            Login
+                        </Button>
+                    </Typography>
+                </Box>
+            </Card>
+        </Container>
+    );
+}

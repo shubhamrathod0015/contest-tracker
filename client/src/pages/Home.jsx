@@ -1,281 +1,273 @@
-import React, { useState, useEffect, useContext } from "react";
-import axios from "axios";
+import React, { useEffect, useState, useContext } from "react";
+import {
+  Container, Typography, Select, MenuItem,
+  Card, CardContent, Button, Box, IconButton,
+  Grid, CircularProgress, Tooltip, Snackbar, Alert
+} from "@mui/material";
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import API from "../services/api";
 import { AuthContext } from "../context/AuthContext";
-import { AiOutlineBook, AiFillBook, AiOutlineYoutube } from "react-icons/ai";
-import { toast } from "react-hot-toast";
+import { ContestContext } from "../context/ContestContext";
 
-const ContestList = () => {
-  const { user, token } = useContext(AuthContext);
-  const [contests, setContests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [bookmarked, setBookmarked] = useState([]);
-  const [solutions, setSolutions] = useState({});
-  const [selectedPlatforms, setSelectedPlatforms] = useState([
-    "Codeforces",
-    "CodeChef",
-    "LeetCode",
-  ]);
+export default function Home() {
+  // const [contests, setContests] = useState([]);
+  const [platforms, setPlatforms] = useState([]);
+  const [timeLeft, setTimeLeft] = useState({});
+  const [bookmarked, setBookmarked] = useState({});
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState(""); // Snackbar message
 
-  useEffect(() => {
-    const fetchContests = async () => {
-      try {
-        const { data } = await axios.get("/api/contests/all");
-        const updatedContests = data.map((contest) => ({
-          ...contest,
-          timeRemaining: Math.max(
-            0,
-            Math.floor((new Date(contest.startTime) - new Date()) / 1000)
-          ),
-        }));
-        setContests(updatedContests);
-      } catch (error) {
-        console.error("Error fetching contests:", error);
-        toast.error("Failed to fetch contests.");
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { user } = useContext(AuthContext);
+  const { contests, loading, fetchContests } = useContext(ContestContext);
 
-    const fetchBookmarks = async () => {
-      if (user && token) {
-        try {
-          const { data } = await axios.get("/api/bookmarks", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setBookmarked(data.map(({ contestId }) => contestId));
-        } catch (error) {
-          console.error("Error fetching bookmarks:", error);
-        }
-      }
-    };
 
-    const fetchInitialData = async () => {
-      await fetchContests();
-      await fetchBookmarks();
-    };
+  const fetchBookmarks = async () => {
+    if (!user) return;
 
-    fetchInitialData();
-
-    const interval = setInterval(() => {
-      setContests((prevContests) =>
-        prevContests.map((contest) => ({
-          ...contest,
-          timeRemaining: Math.max(0, contest.timeRemaining - 1),
-        }))
-      );
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [user, token]);
-
-  useEffect(() => {
-    const fetchSolutions = async () => {
-      try {
-        const { data } = await axios.get("/api/solutions");
-        const solutionsMap = {};
-
-        data.forEach((solution) => {
-          const matchingContest = contests.find(
-            (contest) =>
-              (contest.title || "").toLowerCase() ===
-                (solution.contest_name || "").toLowerCase() &&
-              (contest.platform || "").toLowerCase() ===
-                (solution.platform || "").toLowerCase()
-          );
-
-          if (matchingContest) {
-            solutionsMap[matchingContest._id] = solution.youtube_link;
-          }
-        });
-
-        setSolutions(solutionsMap);
-      } catch (error) {
-        console.error("Error fetching solutions:", error);
-      }
-    };
-
-    if (contests.length > 0) {
-      fetchSolutions();
+    try {
+      const res = await API.get("/bookmarks");
+      const bookmarksData = res.data.reduce((acc, contest) => {
+        acc[contest.contestId] = contest; // Store full contest data
+        return acc;
+      }, {});
+      setBookmarked(bookmarksData);
+    } catch (err) {
+      console.error("Error fetching bookmarks", err);
     }
+  };
+  // Fetch when user logs in
+  useEffect(() => {
+    if (user) {
+      fetchBookmarks();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const platform = platforms.length > 0 ? platforms.join(",") : "";
+    // console.log("in", platform)
+    fetchContests("upcoming", platform); // Fetch contests when platforms change
+  }, [platforms]);
+
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const updatedTimeLeft = {};
+      contests.forEach((contest) => {
+        updatedTimeLeft[contest.id] = getRemainingTime(contest.start);
+      });
+      setTimeLeft(updatedTimeLeft);
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000); // Update every second
+    return () => clearInterval(interval); // Cleanup on unmount
   }, [contests]);
 
-  const filteredContests = contests.filter((contest) =>
-    selectedPlatforms.includes(contest.platform)
-  );
 
-  const upcomingContests = filteredContests.filter(
-    (contest) => contest.timeRemaining > 0
-  );
-  const completedContests = filteredContests.filter(
-    (contest) => contest.timeRemaining === 0
-  );
+  const getRemainingTime = (startTime) => {
+    const now = new Date();
+    const contestStart = new Date(startTime);
+    const diff = contestStart - now; // Difference in milliseconds
 
-  const togglePlatform = (platform) => {
-    setSelectedPlatforms((prev) =>
-      prev.includes(platform)
-        ? prev.filter((p) => p !== platform)
-        : [...prev, platform]
-    );
+    if (diff <= 0) return "Started"; // If the contest has already started
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    return `${hours}h : ${minutes}m : ${seconds}s`;
   };
+
 
   const toggleBookmark = async (contest) => {
-    if (!user) {
-      toast.error("Please log in to bookmark contests.");
+    if (!user ) {
+      setSnackbarMessage("Please sign in to bookmark contests.");
+      setOpenSnackbar(true);
       return;
     }
-    const isBookmarked = bookmarked.includes(contest._id);
+  
     try {
+      const contestId = contest.id;
+      const isBookmarked = !!bookmarked[contestId]; // Convert to boolean
+  
       if (isBookmarked) {
-        await axios.delete(`/api/bookmarks/${contest._id}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        // Remove bookmark from API
+        await API.delete(`/bookmarks/${contestId}` , { headers: { Authorization: `Bearer ${user.token}`} });
+        setSnackbarMessage("Bookmark removed ❌");
+  
+        // Update local state
+        setBookmarked((prev) => {
+          const updated = { ...prev };
+          delete updated[contestId];
+          return updated;
         });
-        setBookmarked((prev) => prev.filter((id) => id !== contest._id));
-        toast.success("Bookmark removed.");
       } else {
-        await axios.post(
-          "/api/bookmarks",
-          {
-            _id: contest._id,
-            title: contest.title,
-            platform: contest.platform,
-            startTime: contest.startTime,
-            url: contest.url,
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setBookmarked((prev) => [...prev, contest._id]);
-        toast.success("Contest bookmarked!");
+        // Add bookmark to API
+        await API.post("/bookmarks", {
+          contestId: contest.id,
+          name: contest.event,
+          platform: platformNames[contest.host]?.name,
+          startTime: new Date(contest.start).toISOString(),
+          duration: contest.duration,
+        }, {headers: { Authorization: `Bearer ${user.token}`} });
+  
+        setSnackbarMessage("Contest bookmarked! ✅");
+  
+        // Update local state
+        setBookmarked((prev) => ({
+          ...prev,
+          [contestId]: contest, // Store full contest data
+        }));
       }
-    } catch (error) {
-      toast.error("Failed to update bookmark.");
-      console.error("Error toggling bookmark:", error);
+  
+      setOpenSnackbar(true);
+    } catch (err) {
+      console.error("Error toggling bookmark:", err);
+      setSnackbarMessage("Something went wrong. Try again.");
+      setOpenSnackbar(true);
     }
   };
+  
 
-  if (loading)
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="w-[90px] h-[90px] border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
-      </div>
-    );
+  const formatDuration = (durationMs) => {
+    const hours = Math.floor(durationMs / 3600000);
+    const minutes = Math.floor((durationMs % 3600000) / 60000);
+    return `${hours}h : ${minutes}m`;
+  };
 
-  if (error)
-    return <p className="text-red-500 text-center mt-4">Error: {error}</p>;
-
+  const platformNames = {
+    "codeforces.com": { name: "Codeforces", color: "blue" },
+    "leetcode.com": { name: "Leetcode", color: "orange" },
+    "codechef.com": { name: "CodeChef", color: "Brown" },
+  };
   return (
-    <div className="p-4 md:mx-12 mt-3 rounded-md shadow-lg">
-      <h2 className="text-xl font-bold">Upcoming & Completed Contests</h2>
-      <div className="flex gap-2 my-4">
-        {["Codeforces", "CodeChef", "LeetCode"].map((platform) => (
-          <button
-            key={platform}
-            onClick={() => togglePlatform(platform)}
-            className={`p-2 rounded-md ${
-              selectedPlatforms.includes(platform)
-                ? "bg-purple-500 text-white"
-                : "bg-gray-500"
-            }`}
-          >
-            {platform}
-          </button>
-        ))}
-      </div>
+    <Container maxWidth="md" sx={{ mt: 4 }}>
+      <Typography variant="h4" fontWeight="bold" gutterBottom align="center">
+        🎯 Upcoming Contests
+      </Typography>
 
-      <h3 className="text-lg font-semibold mt-4">Upcoming Contests</h3>
-      {upcomingContests.map((contest) => (
-        <div
-          key={contest._id}
-          className="mt-2 p-2 border flex justify-between items-center"
+      <Box display="flex" justifyContent="right" mb={3}>
+        <Select
+          multiple
+          value={platforms}  // platforms state should be an array of selected platforms
+          onChange={(e) => setPlatforms(e.target.value)}  // Update with selected values directly
+          displayEmpty
+          variant="outlined"
+          sx={{ width: 300, borderRadius: 2 }}
+          renderValue={(selected) =>
+            selected.length === 0
+              ? "All Platforms" // Default display when nothing is selected
+              : selected.map((value) => (
+                <span key={value} style={{ color: platformNames[value]?.color }}>
+                  {platformNames[value]?.name || value}
+                </span>
+              ))
+          }
         >
-          <div>
-            <a
-              href={contest.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline"
-            >
-              <strong>{contest.title}</strong>
-            </a>
-            <span> - {new Date(contest.startTime).toLocaleString()}</span>
-            <span className="text-green-500 block text-[12px]">
-              Starts in: {Math.floor(contest.timeRemaining / 86400)}d
-              {Math.floor((contest.timeRemaining % 86400) / 3600)}h
-              {Math.floor((contest.timeRemaining % 3600) / 60)}m
-              {contest.timeRemaining % 60}s
-            </span>
-          </div>
-          <button
-            onClick={() => toggleBookmark(contest)}
-            className="p-2 rounded-md bg-yellow-400"
-          >
-            {bookmarked.includes(contest._id) ? (
-              <AiFillBook />
-            ) : (
-              <AiOutlineBook />
-            )}
-          </button>
+
+          {Object.entries(platformNames).map(([value, { name, color }]) => (
+            <MenuItem key={value} value={value}>
+              <span style={{ color }}>{name}</span>
+            </MenuItem>
+          ))}
+        </Select>
+
+      </Box>
+
+      {/* Loading Indicator */}
+      {loading ? (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+          <CircularProgress size={50} />
         </div>
-      ))}
+      ) :
+        (contests.length > 0 ? (
+          <Grid container spacing={3}>
+            {contests.map((contest) => (
 
-      <h3 className="text-lg font-semibold mt-6">Completed Contests</h3>
-      <ul>
-        {completedContests.length > 0 ? (
-          completedContests.map((contest) => (
-            <li
-              key={contest._id}
-              className="mt-2 p-2 border flex justify-between items-center"
-            >
-              <div>
-                <a
-                  href={contest.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline"
-                >
-                  <strong>{contest.title}</strong>
-                </a>
-                <span> - {new Date(contest.startTime).toLocaleString()}</span>
-              </div>
-              <div className="flex gap-2">
-                {solutions[contest._id] ? (
-                  <a
-                    href={solutions[contest._id]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 rounded-md bg-red-600 text-white flex items-center gap-2"
-                    title="Watch solution video"
-                  >
-                    <AiOutlineYoutube />
-                  </a>
-                ) : (
-                  <span className="p-2 rounded-md bg-red-300 text-gray-600 flex items-center gap-2 cursor-not-allowed">
-                    <AiOutlineYoutube />
-                  </span>
-                )}
-                <button
-                  onClick={() => toggleBookmark(contest)}
-                  className="p-2 rounded-md bg-yellow-400"
-                >
-                  {bookmarked.includes(contest._id) ? (
-                    <AiFillBook />
-                  ) : (
-                    <AiOutlineBook />
-                  )}
-                </button>
-              </div>
-            </li>
-          ))
+              <Grid item xs={12} key={contest.id}>
+                <Card sx={{ p: 2, borderRadius: 3, boxShadow: 3 }}>
+                  <CardContent>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Typography variant="h6" fontWeight="bold">
+                        {contest.event}
+                      </Typography>
+
+                      <Box display="flex" alignItems="center">
+                        {/* ⏳ Duration */}
+                        <Typography variant="body2" color="textSecondary" sx={{ mr: 2 }}>
+                          ⏳ {formatDuration(contest.duration * 1000)}
+                        </Typography>
+
+                        {/* Bookmark Icon */}
+                        <Tooltip title={bookmarked[contest.id] ? "Bookmarked" : "Bookmark"}>
+                          <IconButton onClick={() => toggleBookmark(contest)}>
+                            {bookmarked[contest.id] ? (
+                              <FavoriteIcon color="error" />
+                            ) : (
+                              <FavoriteBorderIcon />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Box>
+
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                      <Typography variant="body2" color="textSecondary" mt={1}>
+                        📅 Date: {new Date(contest.start).toLocaleDateString()}
+                      </Typography>
+                      <Typography key={contest.id} variant="h6" sx={{ color: platformNames[contest.host].color, fontWeight: "bold", align: "right" }}>
+                        {platformNames[contest.host]?.name}{/* Convert platform name */}
+                      </Typography>
+                    </Box>
+
+
+                    <Box display="flex" alignItems="center" mt={1}>
+                      <AccessTimeIcon sx={{ color: "primary.main", mr: 1 }} />
+                      <Typography
+                        variant="body1"
+                        color={timeLeft[contest.id] === "Started" ? "error" : "primary"}
+                        fontWeight="bold"
+                      >
+                        {timeLeft[contest.id] || <CircularProgress size={20} />}
+                      </Typography>
+                    </Box>
+
+
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      fullWidth
+                      sx={{ mt: 2, borderRadius: 2 }}
+                      href={contest.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Join Contest
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
         ) : (
-          <p className="text-gray-500 text-center py-4">
-            No completed contests.
-          </p>
-        )}
-      </ul>
-    </div>
+          <Typography variant="body2" align="center" mt={3}>
+            No contests available for the selected platforms.
+          </Typography>
+        ))}
+
+      {/* Snackbar for Bookmark Messages */}
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={3000}
+        onClose={() => setOpenSnackbar(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert severity={user ? "success" : "warning"} sx={{ width: "100%" }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </Container>
   );
-};
-
-export default ContestList;
-
+}
